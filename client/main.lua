@@ -31,6 +31,8 @@ function startDelivering()
     playerVehicles[PlayerPedId()] = vehicle
     TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
 
+    TriggerServerEvent('neon_pizzajob:giveVehicleKeys', uniquePlate)
+
     isDelivering = true
     TriggerServerEvent('neon_pizzajob:startDelivering')
     currentDelivery = getRandomDeliveryLocation()
@@ -46,13 +48,84 @@ end
 
 function removePreviousMarkerAndTarget()
     if targetZoneId then
-        exports.ox_target:removeZone(targetZoneId)
+        if Config.Target == 'ox_target' then
+            exports.ox_target:removeZone(targetZoneId)
+        elseif Config.Target == 'qb-target' then
+            exports['qb-target']:RemoveZone('delivery_zone')
+        end
         targetZoneId = nil
     end
 
     if currentDeliveryBlip then
         RemoveBlip(currentDeliveryBlip)
         currentDeliveryBlip = nil
+    end
+
+    if Config.Target == 'none' then
+        lib.hideTextUI()
+    end
+end
+
+local function addTarget(coords, label, options)
+    if Config.Target == 'ox_target' then
+        return exports.ox_target:addSphereZone({
+            coords = coords,
+            radius = options.distance or 1.5,
+            options = {
+                {
+                    label = "Deliver Pizza",
+                    icon = 'fa-solid fa-box',
+                    onSelect = options.onSelect,
+                    canInteract = options.canInteract
+                }
+            }
+        })
+    elseif Config.Target == 'qb-target' then
+        exports['qb-target']:AddBoxZone('delivery_zone', coords, 1.0, 1.0, {
+            name = 'delivery_zone',
+            heading = 0,
+            debugPoly = false,
+            minZ = coords.z - 1.0,
+            maxZ = coords.z + 1.0,
+        }, {
+            options = {
+                {
+                    label = "Deliver Pizza",
+                    icon = 'fa-solid fa-box',
+                    action = options.onSelect
+                }
+            },
+            distance = options.distance or 1.5
+        })
+    elseif Config.Target == 'none' then
+        Citizen.CreateThread(function()
+            local showing = false
+            while true do
+                local playerPed = PlayerPedId()
+                local playerCoords = GetEntityCoords(playerPed)
+                local distance = #(playerCoords - coords)
+
+                if distance <= (options.distance or 1.5) then
+                    if not showing then
+                        lib.showTextUI("[E] Deliver Pizza", {
+                            position = "right-center",
+                        })
+                        showing = true
+                    end
+
+                    if IsControlJustReleased(0, 38) then
+                        options.onSelect()
+                    end
+                else
+                    if showing then
+                        lib.hideTextUI()
+                        showing = false
+                    end
+                end
+
+                Wait(0)
+            end
+        end)
     end
 end
 
@@ -68,25 +141,19 @@ function createDeliveryBlip(delivery)
     AddTextComponentString("Delivery Location")
     EndTextCommandSetBlipName(currentDeliveryBlip)
 
-    targetZoneId = exports.ox_target:addSphereZone({
-        coords = deliveryCoords,
-        radius = 1.5,
-        options = {
-            {
-                label = "Deliver Pizza",
-                icon = 'fa-solid fa-box',
-                onSelect = function()
-                    startDeliveryAnimation()
-                end,
-                canInteract = function()
-                    local playerPed = PlayerPedId()
-                    local playerCoords = GetEntityCoords(playerPed)
-                    local distance = #(playerCoords - vector3(deliveryCoords.x, deliveryCoords.y, deliveryCoords.z))
-                    
-                    return not IsPedInAnyVehicle(playerPed, false) and distance <= 1.5
-                end
-            }
-        }
+    targetZoneId = addTarget(deliveryCoords, "Deliver Pizza", {
+        icon = 'fa-solid fa-box',
+        distance = 1.5,
+        onSelect = function()
+            startDeliveryAnimation()
+        end,
+        canInteract = function()
+            local playerPed = PlayerPedId()
+            local playerCoords = GetEntityCoords(playerPed)
+            local distance = #(playerCoords - vector3(deliveryCoords.x, deliveryCoords.y, deliveryCoords.z))
+
+            return not IsPedInAnyVehicle(playerPed, false) and distance <= 1.5
+        end
     })
 end
 
@@ -154,8 +221,10 @@ end
 
 function stopDelivering()
     local playerVehicle = playerVehicles[PlayerPedId()]
+    local plate = GetVehicleNumberPlateText(playerVehicle)
 
     if playerVehicle and DoesEntityExist(playerVehicle) then
+        TriggerServerEvent('neon_pizzajob:removeVehicleKeys', plate)
         DeleteVehicle(playerVehicle)
         playerVehicles[PlayerPedId()] = nil
     end
@@ -262,6 +331,49 @@ local function addTargetOptions(ped)
                 end
             }
         })
+    elseif Config.Target == 'qb-target' then
+        exports['qb-target']:AddTargetEntity(ped, {
+            options = {
+                {
+                    label = Config.TargetSettings.label,
+                    icon = 'fa-solid fa-pizza-slice',
+                    action = function()
+                        openChefMenu()
+                    end
+                }
+            },
+            distance = Config.TargetSettings.distance
+        })
+    elseif Config.Target == 'none' then
+        Citizen.CreateThread(function()
+            local showing = false
+            while true do
+                local playerPed = PlayerPedId()
+                local playerCoords = GetEntityCoords(playerPed)
+                local pedCoords = GetEntityCoords(ped)
+                local distance = #(playerCoords - pedCoords)
+
+                if distance <= Config.TargetSettings.distance then
+                    if not showing then
+                        lib.showTextUI("[E] " .. Config.TargetSettings.label, {
+                            position = "right-center",
+                        })
+                        showing = true
+                    end
+
+                    if IsControlJustReleased(0, 38) then
+                        openChefMenu()
+                    end
+                else
+                    if showing then
+                        lib.hideTextUI()
+                        showing = false
+                    end
+                end
+
+                Wait(0)
+            end
+        end)
     end
 end
 

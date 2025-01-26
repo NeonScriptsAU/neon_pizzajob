@@ -1,6 +1,6 @@
 local webhooks = {
-    DeliveryCompletion = "https://discord.com/api/webhooks/1298503005548838962/fp0m2zk3BUthZM_DqHrc82ro9FbBPgj05t-8_vIU5XRqO0XD-cf4rrRJyAXES91usVls", -- Replace with your webhook URL
-    SuspiciousActivity = "https://discord.com/api/webhooks/1298503005548838962/fp0m2zk3BUthZM_DqHrc82ro9FbBPgj05t-8_vIU5XRqO0XD-cf4rrRJyAXES91usVls"  -- Replace with your webhook URL
+    DeliveryCompletion = "YOUR_WEBHOOK_HERE", -- Replace with your webhook URL
+    SuspiciousActivity = "YOUR_WEBHOOK_HERE"  -- Replace with your webhook URL
 }
 
 -- Function to send logs to Discord

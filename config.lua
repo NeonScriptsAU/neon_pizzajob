@@ -39,6 +39,8 @@ Config.TargetSettings = {
     size = 1.0,
 }
 
+Config.VehicleKeys = 'qb' -- Choose from 'qb', 'qbx', or 'wasabi'
+
 -- Delivery Settings
 Config.Deliveries = {
     vehicle = 'panto',

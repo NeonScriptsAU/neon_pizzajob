@@ -19,6 +19,38 @@ local function getIdentifier(Player)
     end
 end
 
+local function giveVehicleKeys(source, plate)
+    if Config.VehicleKeys == 'qb' then
+        TriggerClientEvent('vehiclekeys:client:SetOwner', source, plate)
+    elseif Config.VehicleKeys == 'qbx' then
+        exports['qbx_vehiclekeys']:GiveKeys(source, plate)
+    elseif Config.VehicleKeys == 'wasabi' then
+        exports['wasabi_carlock']:GiveKey(source, plate)
+    end
+end
+
+local function removeVehicleKeys(source, plate)
+    if Config.VehicleKeys == 'qb' then
+        TriggerClientEvent('vehiclekeys:client:RemoveKeys', source, plate)
+    elseif Config.VehicleKeys == 'qbx' then
+        exports['qbx_vehiclekeys']:RemoveKeys(source, plate)
+    elseif Config.VehicleKeys == 'wasabi' then
+        exports['wasabi_carlock']:RemoveKey(source, plate)
+    end
+end
+
+RegisterNetEvent('neon_pizzajob:giveVehicleKeys')
+AddEventHandler('neon_pizzajob:giveVehicleKeys', function(plate)
+    local src = source
+    giveVehicleKeys(src, plate)
+end)
+
+RegisterNetEvent('neon_pizzajob:removeVehicleKeys')
+AddEventHandler('neon_pizzajob:removeVehicleKeys', function(plate)
+    local src = source
+    removeVehicleKeys(src, plate)
+end)
+
 local function checkPlayerExists(identifier, callback)
     MySQL.scalar('SELECT COUNT(*) FROM neon_pizzajob WHERE identifier = ?', {identifier}, function(count)
         callback(count > 0)
