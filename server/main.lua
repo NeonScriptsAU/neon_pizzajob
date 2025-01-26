@@ -19,36 +19,40 @@ local function getIdentifier(Player)
     end
 end
 
-local function giveVehicleKeys(source, plate)
+local function giveVehicleKeys(source, plate, netid)
     if Config.VehicleKeys == 'qb' then
         TriggerClientEvent('vehiclekeys:client:SetOwner', source, plate)
     elseif Config.VehicleKeys == 'qbx' then
         exports['qbx_vehiclekeys']:GiveKeys(source, plate)
     elseif Config.VehicleKeys == 'wasabi' then
         exports['wasabi_carlock']:GiveKey(source, plate)
+    elseif Config.VehicleKeys == 'mrnewb' then
+        exports.MrNewbVehicleKeys:GiveKeys(source, netid)
     end
 end
 
-local function removeVehicleKeys(source, plate)
+local function removeVehicleKeys(source, plate, netid)
     if Config.VehicleKeys == 'qb' then
         TriggerClientEvent('vehiclekeys:client:RemoveKeys', source, plate)
     elseif Config.VehicleKeys == 'qbx' then
         exports['qbx_vehiclekeys']:RemoveKeys(source, plate)
     elseif Config.VehicleKeys == 'wasabi' then
         exports['wasabi_carlock']:RemoveKey(source, plate)
+    elseif Config.VehicleKeys == 'mrnewb' then
+        exports.MrNewbVehicleKeys:RemoveKeys(source, netid)
     end
+    local entity = NetworkGetEntityFromNetworkId(netid)
+    DeleteEntity(entity)
 end
 
-RegisterNetEvent('neon_pizzajob:giveVehicleKeys')
-AddEventHandler('neon_pizzajob:giveVehicleKeys', function(plate)
+RegisterNetEvent('neon_pizzajob:giveVehicleKeys', function(plate, netid)
     local src = source
-    giveVehicleKeys(src, plate)
+    giveVehicleKeys(src, plate, netid)
 end)
 
-RegisterNetEvent('neon_pizzajob:removeVehicleKeys')
-AddEventHandler('neon_pizzajob:removeVehicleKeys', function(plate)
+RegisterNetEvent('neon_pizzajob:removeVehicleKeys', function(plate, netid)
     local src = source
-    removeVehicleKeys(src, plate)
+    removeVehicleKeys(src, plate, netid)
 end)
 
 local function checkPlayerExists(identifier, callback)
@@ -65,20 +69,17 @@ local function updateTotalDeliveries(identifier)
     MySQL.update('UPDATE neon_pizzajob SET total_deliveries = total_deliveries + 1 WHERE identifier = ?', {identifier})
 end
 
-RegisterNetEvent('neon_pizzajob:startDelivering')
-AddEventHandler('neon_pizzajob:startDelivering', function()
+RegisterNetEvent('neon_pizzajob:startDelivering', function()
     local src = source
     activeDeliveries[src] = true
 end)
 
-RegisterNetEvent('neon_pizzajob:stopDelivering')
-AddEventHandler('neon_pizzajob:stopDelivering', function()
+RegisterNetEvent('neon_pizzajob:stopDelivering', function()
     local src = source
     activeDeliveries[src] = nil
 end)
 
-RegisterNetEvent('neon_pizzajob:completeDelivery')
-AddEventHandler('neon_pizzajob:completeDelivery', function()
+RegisterNetEvent('neon_pizzajob:completeDelivery', function()
     local src = source
     local Player
 
@@ -98,7 +99,7 @@ AddEventHandler('neon_pizzajob:completeDelivery', function()
         end
 
         local steamName = GetPlayerName(src)
-        
+
         Utils.logDeliveryCompletion(steamName, payAmount)
 
         local identifier = getIdentifier(Player)
@@ -119,8 +120,7 @@ AddEventHandler('neon_pizzajob:completeDelivery', function()
     end
 end)
 
-RegisterNetEvent('neon_pizzajob:requestLeaderboard')
-AddEventHandler('neon_pizzajob:requestLeaderboard', function()
+RegisterNetEvent('neon_pizzajob:requestLeaderboard', function()
     local src = source
     MySQL.query('SELECT identifier, total_deliveries FROM neon_pizzajob ORDER BY total_deliveries DESC LIMIT 10', {}, function(results)
         local leaderboard = {}

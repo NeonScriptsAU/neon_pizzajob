@@ -39,7 +39,7 @@ Config.TargetSettings = {
     size = 1.0,
 }
 
-Config.VehicleKeys = 'qb' -- Choose from 'qb', 'qbx', or 'wasabi'
+Config.VehicleKeys = 'qb' -- Choose from 'qb', 'qbx', 'wasabi' or 'mrnewb'
 
 -- Delivery Settings
 Config.Deliveries = {

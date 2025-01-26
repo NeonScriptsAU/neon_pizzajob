@@ -28,25 +28,27 @@ function startDelivering()
 
     local vehicle = CreateVehicle(vehicleHash, Config.Deliveries.spawnLocation.x, Config.Deliveries.spawnLocation.y, Config.Deliveries.spawnLocation.z, Config.Deliveries.spawnLocation.w, true, false)
     SetVehicleNumberPlateText(vehicle, uniquePlate)
-    playerVehicles[PlayerPedId()] = vehicle
+    playerVehicles[PlayerPedId()] = NetworkGetNetworkIdFromEntity(vehicle)
     TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
 
-    TriggerServerEvent('neon_pizzajob:giveVehicleKeys', uniquePlate)
+
+
+    TriggerServerEvent('neon_pizzajob:giveVehicleKeys', uniquePlate, NetworkGetNetworkIdFromEntity(vehicle))
 
     isDelivering = true
     TriggerServerEvent('neon_pizzajob:startDelivering')
     currentDelivery = getRandomDeliveryLocation()
-    setDeliveryWaypoint(currentDelivery)
+    SetDeliveryWaypoint(currentDelivery)
     createDeliveryBlip(currentDelivery)
 end
 
-function setDeliveryWaypoint(delivery)
+function SetDeliveryWaypoint(delivery)
     if delivery and delivery.location then
         SetNewWaypoint(delivery.location.x, delivery.location.y)
     end
 end
 
-function removePreviousMarkerAndTarget()
+function RemovePreviousMarkerAndTarget()
     if targetZoneId then
         if Config.Target == 'ox_target' then
             exports.ox_target:removeZone(targetZoneId)
@@ -98,7 +100,7 @@ local function addTarget(coords, label, options)
             distance = options.distance or 1.5
         })
     elseif Config.Target == 'none' then
-        Citizen.CreateThread(function()
+        CreateThread(function()
             local showing = false
             while true do
                 local playerPed = PlayerPedId()
@@ -131,7 +133,7 @@ end
 
 function createDeliveryBlip(delivery)
     local deliveryCoords = delivery.location
-    removePreviousMarkerAndTarget()
+    RemovePreviousMarkerAndTarget()
 
     currentDeliveryBlip = AddBlipForCoord(deliveryCoords.x, deliveryCoords.y, deliveryCoords.z)
     SetBlipSprite(currentDeliveryBlip, 1)
@@ -145,7 +147,7 @@ function createDeliveryBlip(delivery)
         icon = 'fa-solid fa-box',
         distance = 1.5,
         onSelect = function()
-            startDeliveryAnimation()
+            StartDeliveryAnimation()
         end,
         canInteract = function()
             local playerPed = PlayerPedId()
@@ -157,7 +159,7 @@ function createDeliveryBlip(delivery)
     })
 end
 
-function startDeliveryAnimation()
+function StartDeliveryAnimation()
     local playerPed = PlayerPedId()
     local animDict = "anim@heists@box_carry@"
     local animName = "idle"
@@ -171,9 +173,9 @@ function startDeliveryAnimation()
     end
 
     local propEntity = CreateObject(GetHashKey(prop), GetEntityCoords(playerPed), true, true, false)
-    AttachEntityToEntity(propEntity, playerPed, GetPedBoneIndex(playerPed, propBone), 
-        propPlacement[1], propPlacement[2], propPlacement[3], 
-        propPlacement[4], propPlacement[5], propPlacement[6], 
+    AttachEntityToEntity(propEntity, playerPed, GetPedBoneIndex(playerPed, propBone),
+        propPlacement[1], propPlacement[2], propPlacement[3],
+        propPlacement[4], propPlacement[5], propPlacement[6],
         true, true, false, true, 1, true
     )
 
@@ -196,11 +198,11 @@ function startDeliveryAnimation()
         DetachEntity(propEntity, true, true)
         DeleteObject(propEntity)
 
-        completeDelivery()
+        CompleteDelivery()
     end
 end
 
-function completeDelivery()
+function CompleteDelivery()
     TriggerServerEvent('neon_pizzajob:completeDelivery')
 
     lib.notify({
@@ -215,17 +217,17 @@ function completeDelivery()
     until newDelivery ~= currentDelivery
 
     currentDelivery = newDelivery
-    setDeliveryWaypoint(currentDelivery)
+    SetDeliveryWaypoint(currentDelivery)
     createDeliveryBlip(currentDelivery)
 end
 
-function stopDelivering()
+function StopDelivering()
     local playerVehicle = playerVehicles[PlayerPedId()]
-    local plate = GetVehicleNumberPlateText(playerVehicle)
+    local vehicle = NetworkGetEntityFromNetworkId(playerVehicle)
 
-    if playerVehicle and DoesEntityExist(playerVehicle) then
-        TriggerServerEvent('neon_pizzajob:removeVehicleKeys', plate)
-        DeleteVehicle(playerVehicle)
+    if playerVehicle and DoesEntityExist(vehicle) then
+        local plate = GetVehicleNumberPlateText(vehicle)
+        TriggerServerEvent('neon_pizzajob:removeVehicleKeys', plate, playerVehicle)
         playerVehicles[PlayerPedId()] = nil
     end
 
@@ -235,7 +237,7 @@ function stopDelivering()
         type = 'inform'
     })
 
-    removePreviousMarkerAndTarget()
+    RemovePreviousMarkerAndTarget()
     SetWaypointOff()
     TriggerServerEvent('neon_pizzajob:stopDelivering')
     isDelivering = false
@@ -281,7 +283,7 @@ local function openChefMenu()
             icon = 'fa-solid fa-stop',
             iconColor = '#FF0000',
             onSelect = function()
-                stopDelivering()
+                StopDelivering()
             end
         })
     else
@@ -345,7 +347,7 @@ local function addTargetOptions(ped)
             distance = Config.TargetSettings.distance
         })
     elseif Config.Target == 'none' then
-        Citizen.CreateThread(function()
+        CreateThread(function()
             local showing = false
             while true do
                 local playerPed = PlayerPedId()
@@ -380,7 +382,7 @@ end
 local function spawnPed()
     local pedHash = GetHashKey(pedModel)
 
-    Citizen.CreateThread(function()
+    CreateThread(function()
         RequestModel(pedHash)
         local timeout = 5000
         while not HasModelLoaded(pedHash) do
@@ -400,7 +402,7 @@ local function spawnPed()
 end
 
 local function createBlip()
-    Citizen.CreateThread(function()
+    CreateThread(function()
         local blip = AddBlipForCoord(Config.Ped.location.x, Config.Ped.location.y, Config.Ped.location.z)
         SetBlipSprite(blip, Config.Blip.sprite)
         SetBlipColour(blip, Config.Blip.color)
